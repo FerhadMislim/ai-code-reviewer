@@ -70,16 +70,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.MODELS_GITHUB_TOKEN }}
         run: |
-          mkdir -p review-results
+          mkdir -p review-results changed-files
           
           # Review each changed file
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
             echo "Reviewing $file..."
             python code_reviewer.py review "$file" --format json --output "review-results/$(basename $file).json" || true
+            cp "$file" "changed-files/$(basename $file)"
           done
           
           # Generate combined markdown report
-          python code_reviewer.py review . --format markdown --output review-results/summary.md || true
+          python code_reviewer.py review changed-files/ --recursive --format markdown --output review-results/summary.md || true
+
+          # Delete changed-files directory
+          rm -rf changed-files
       
       - name: Comment on PR
         if: steps.changed-files.outputs.any_changed == 'true'
@@ -124,11 +128,6 @@ jobs:
             f.write(workflow)
         
         print(f"✅ GitHub Action workflow created: {output_file}")
-        print("\n📝 Next steps:")
-        print("1. Add MODELS_GITHUB_TOKEN to your repository secrets")
-        print("   Go to: Settings → Secrets and variables → Actions → New repository secret")
-        print("2. Commit and push the workflow file")
-        print("3. Create a PR to test the automation!")
     
     @staticmethod
     def generate_pre_commit_hook():

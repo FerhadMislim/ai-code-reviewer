@@ -52,16 +52,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.MODELS_GITHUB_TOKEN }}
         run: |
-          mkdir -p review-results
+          mkdir -p review-results changed-files
           
           # Review each changed file
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
             echo "Reviewing $file..."
             python code_reviewer.py review "$file" --format json --output "review-results/$(basename $file).json" || true
+            cp "$file" "changed-files/$(basename $file)"
           done
           
           # Generate combined markdown report
-          python code_reviewer.py review . --recursive --format markdown --output review-results/summary.md || true
+          python code_reviewer.py review changed-files/ --recursive --format markdown --output review-results/summary.md || true
+
+          # Delete changed-files directory
+          rm -rf changed-files
       
       - name: Comment on PR
         if: steps.changed-files.outputs.any_changed == 'true'
@@ -90,10 +94,10 @@ jobs:
               body: comment
             });
       
-      - name: Upload review results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: code-review-results
-          path: review-results/
-          retention-days: 30
+      # - name: Upload review results
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: code-review-results
+      #     path: review-results/
+      #     retention-days: 30
