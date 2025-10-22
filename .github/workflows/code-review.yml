@@ -92,7 +92,7 @@ jobs:
       
       - name: Upload review results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: code-review-results
           path: review-results/
