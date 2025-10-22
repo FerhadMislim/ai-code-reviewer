@@ -68,7 +68,7 @@ jobs:
       - name: Run AI Code Review
         if: steps.changed-files.outputs.any_changed == 'true'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_MODELS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.MODELS_GITHUB_TOKEN }}
         run: |
           mkdir -p review-results
           
@@ -125,7 +125,7 @@ jobs:
         
         print(f"✅ GitHub Action workflow created: {output_file}")
         print("\n📝 Next steps:")
-        print("1. Add GITHUB_MODELS_TOKEN to your repository secrets")
+        print("1. Add MODELS_GITHUB_TOKEN to your repository secrets")
         print("   Go to: Settings → Secrets and variables → Actions → New repository secret")
         print("2. Commit and push the workflow file")
         print("3. Create a PR to test the automation!")

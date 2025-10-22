@@ -2,7 +2,8 @@ name: AI Code Review
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 jobs:
   review:
@@ -13,7 +14,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       
@@ -24,11 +25,12 @@ jobs:
       
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install requests
       
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v39
+        uses: tj-actions/changed-files@v40
         with:
           files: |
             **.py
@@ -37,33 +39,61 @@ jobs:
             **.java
             **.cpp
             **.go
+            **.rs
+      
+      - name: Download code reviewer
+        run: |
+          # Download the code reviewer from your repo
+          # Assuming code_reviewer.py is in the root
+          ls -la
       
       - name: Run AI Code Review
+        if: steps.changed-files.outputs.any_changed == 'true'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_MODELS_TOKEN: ${{ secrets.GITHUB_MODELS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.MODELS_GITHUB_TOKEN }}
         run: |
-          # Download the code reviewer script
-          # Run review on changed files
+          mkdir -p review-results
+          
+          # Review each changed file
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
-            python code_reviewer.py review "$file" --format markdown --output "review_$file.md"
+            echo "Reviewing $file..."
+            python code_reviewer.py review "$file" --format json --output "review-results/$(basename $file).json" || true
           done
+          
+          # Generate combined markdown report
+          python code_reviewer.py review . --format markdown --output review-results/summary.md || true
       
       - name: Comment on PR
-        uses: actions/github-script@v6
+        if: steps.changed-files.outputs.any_changed == 'true'
+        uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const reviews = fs.readdirSync('.').filter(f => f.startsWith('review_'));
-            let comment = '## 🤖 AI Code Review\n\n';
+            const path = require('path');
             
-            for (const review of reviews) {
-              comment += fs.readFileSync(review, 'utf8') + '\n\n';
+            // Read the summary report
+            let comment = '## 🤖 AI Code Review Results\n\n';
+            
+            try {
+              const summary = fs.readFileSync('review-results/summary.md', 'utf8');
+              comment += summary;
+            } catch (error) {
+              comment += 'Unable to generate review summary.\n';
+              console.error(error);
             }
             
+            // Post comment
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: comment
             });
+      
+      - name: Upload review results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: code-review-results
+          path: review-results/
+          retention-days: 30
