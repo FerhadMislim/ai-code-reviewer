@@ -61,7 +61,7 @@ jobs:
           done
           
           # Generate combined markdown report
-          python code_reviewer.py review . --format markdown --output review-results/summary.md || true
+          python code_reviewer.py review . --recursive --format markdown --output review-results/summary.md || true
       
       - name: Comment on PR
         if: steps.changed-files.outputs.any_changed == 'true'
