@@ -22,6 +22,20 @@ class ReviewResult:
     def to_dict(self) -> Dict:
         """Convert to dictionary"""
         return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict) -> "ReviewResult":
+        return cls(
+            quality_score=data.get('quality_score', 0),
+            bugs=data.get('bugs', []),
+            security_issues=data.get('security_issues', []),
+            improvements=data.get('improvements', []),
+            best_practices=data.get('best_practices', []),
+            summary=data.get('summary', ''),
+            complexity_metrics=data.get('complexity_metrics', {}),
+            language=data.get('language', ''),
+            file_path=data.get('file_path', '')
+        )
     
     def has_issues(self) -> bool:
         """Check if there are any issues found"""

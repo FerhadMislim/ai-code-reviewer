@@ -40,32 +40,24 @@ jobs:
             **.cpp
             **.go
             **.rs
-      
-      - name: Download code reviewer
-        run: |
-          # Download the code reviewer from your repo
-          # Assuming code_reviewer.py is in the root
-          ls -la
-      
+    
       - name: Run AI Code Review
         if: steps.changed-files.outputs.any_changed == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.MODELS_GITHUB_TOKEN }}
         run: |
-          mkdir -p review-results changed-files
+          mkdir -p review-results
           
           # Review each changed file
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
             echo "Reviewing $file..."
-            python code_reviewer.py review "$file" --format json --output "review-results/$(basename $file).json" || true
-            cp "$file" "changed-files/$(basename $file)"
+            # Create a safe filename for the report
+            report_file=$(echo "$file" | sed 's|/|_|g').json
+            python code_reviewer.py review "$file" --format json --output "review-results/$report_file" || true
           done
           
-          # Generate combined markdown report
-          python code_reviewer.py review changed-files/ --recursive --format markdown --output review-results/summary.md || true
-
-          # Delete changed-files directory
-          rm -rf changed-files
+          # Generate combined markdown report from JSON files
+          python code_reviewer.py summarize review-results/ --format markdown --output review-results/summary.md || true
       
       - name: Comment on PR
         if: steps.changed-files.outputs.any_changed == 'true'
@@ -94,10 +86,10 @@ jobs:
               body: comment
             });
       
-      # - name: Upload review results
-      #   if: always()
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: code-review-results
-      #     path: review-results/
-      #     retention-days: 30
+    #   - name: Upload review results
+    #     if: always()
+    #     uses: actions/upload-artifact@v4
+    #     with:
+    #       name: code-review-results
+    #       path: review-results/
+    #       retention-days: 30
