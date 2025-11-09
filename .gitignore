@@ -2,10 +2,10 @@
 __pycache__/
 
 # Virtual Environment
-.code_reviewer_config
+.venv
 
 # Config
-# .code_reviewer_config
+.code_reviewer_config
 
 # Reports
 code_review_*.md
