@@ -1,7 +1,7 @@
 """
 Code complexity and metrics analysis
 """
-# This is a test comment
+
 import re
 from typing import Dict
 
