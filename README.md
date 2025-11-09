@@ -111,6 +111,50 @@ python code_reviewer.py generate-action
 
 Add `GITHUB_MODELS_TOKEN` to your repository secrets, then push the generated workflow file.
 
+## 🎣 Pre-commit Hook
+
+Automate code reviews before every commit to catch issues early.
+
+### Installation
+
+To install the pre-commit hook, run:
+
+```bash
+python code_reviewer.py install-hook
+```
+
+This will create a `pre-commit` file in your `.git/hooks/` directory. The hook will automatically run `python code_reviewer.py review` on your staged files before each commit.
+
+### Usage
+
+1.  **Stage your changes:**
+    ```bash
+    git add .
+    ```
+2.  **Commit your changes:**
+    ```bash
+    git commit -m "Your commit message"
+    ```
+    The AI code review will run, and any findings will be displayed in your console. If the review process encounters an error or if you have not configured your `GITHUB_TOKEN`, the commit might be aborted.
+
+### Using with `pre-commit` framework (Optional)
+
+If you are using the `pre-commit` framework, you can integrate the AI Code Reviewer by adding the following to your `.pre-commit-config.yaml`:
+
+```yaml
+- repo: local
+  hooks:
+    - id: ai-code-review
+      name: AI Code Review
+      entry: python code_reviewer.py review
+      language: system
+      files: \.(py|js|ts|java|cpp|go|rs)$
+      pass_filenames: true
+      always_run: true
+```
+
+Remember to configure your GitHub token using `python code_reviewer.py config --token YOUR_GITHUB_TOKEN` or by setting the `GITHUB_TOKEN` environment variable.
+
 ## 📄 License
 
 MIT License
