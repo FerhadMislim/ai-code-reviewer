@@ -1,40 +1,11 @@
 # Python
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
 
 # Virtual Environment
-venv/
-ENV/
-env/
 .code_reviewer_config
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
 
 # Config
-.code_reviewer_config
+# .code_reviewer_config
 
 # Reports
 code_review_*.md

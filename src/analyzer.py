@@ -7,7 +7,6 @@ from typing import Dict
 
 
 class ComplexityAnalyzer:
-    """Analyze code complexity metrics"""
     
     @staticmethod
     def analyze(code: str, language: str) -> Dict[str, int]:
@@ -82,7 +81,7 @@ class ComplexityAnalyzer:
     
     @staticmethod
     def _get_language_metrics(code: str, language: str) -> Dict[str, int]:
-        """Get language-specific metrics"""
+
         if language == 'python':
             return {
                 'functions': len(re.findall(r'\bdef\s+\w+', code)),
