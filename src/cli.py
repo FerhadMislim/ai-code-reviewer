@@ -4,13 +4,14 @@ Command-line interface for the code reviewer
 
 import argparse
 import sys
+import json
 from pathlib import Path
 
 from .config import ConfigManager
 from .reviewer import GitHubModelsCodeReviewer
 from .reporter import ReportGenerator
 from .github_action import GitHubActionIntegration
-from .models import ReviewConfig
+from .models import ReviewConfig, ReviewResult
 
 
 class CLI:
@@ -32,6 +33,9 @@ Examples:
   
   # Generate markdown report
   code-reviewer review ./src --format markdown --output report.md
+  
+  # Summarize existing JSON reports into a markdown file
+  code-reviewer summarize review-results/ --output summary.md
   
   # Configure GitHub token
   code-reviewer config --token YOUR_GITHUB_TOKEN
@@ -59,6 +63,14 @@ Examples:
                                   help='Model to use (default: from config or gpt-4o)')
         review_parser.add_argument('--temperature', '-t', type=float, default=0.3,
                                   help='Model temperature (default: 0.3)')
+        
+        # Summarize command
+        summarize_parser = subparsers.add_parser('summarize', help='Summarize JSON reports into another format')
+        summarize_parser.add_argument('path', help='Directory containing JSON reports')
+        summarize_parser.add_argument('--format', '-f', 
+                                  choices=['markdown', 'html', 'console'],
+                                  default='markdown', help='Output format for summary')
+        summarize_parser.add_argument('--output', '-o', help='Output file for summary report')
         
         # Config command
         config_parser = subparsers.add_parser('config', help='Configure settings')
@@ -178,7 +190,46 @@ Examples:
         except Exception as e:
             print(f"❌ Error: {str(e)}")
             return 1
-    
+
+    @staticmethod
+    def handle_summarize(args):
+        report_dir = Path(args.path)
+        if not report_dir.is_dir():
+            print(f"❌ Path not found or not a directory: {report_dir}")
+            return 1
+
+        results = []
+        for json_file in report_dir.glob("*.json"):
+            try:
+                with open(json_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    for review_data in data.get('reviews', []):
+                        results.append(ReviewResult.from_dict(review_data))
+            except (json.JSONDecodeError, IOError) as e:
+                print(f"⚠️  Could not read or parse {json_file}: {e}")
+        
+        if not results:
+            print("⚠️  No valid JSON reports found to summarize.")
+            return 0
+
+        # Generate output
+        if args.format == 'console':
+            for result in results:
+                ReportGenerator.print_console(result)
+            ReportGenerator.print_summary(results)
+        
+        elif args.format == 'markdown':
+            output = args.output or 'code_review_summary.md'
+            ReportGenerator.generate_markdown(results, output)
+            ReportGenerator.print_summary(results)
+        
+        elif args.format == 'html':
+            output = args.output or 'code_review_summary.html'
+            ReportGenerator.generate_html(results, output)
+            ReportGenerator.print_summary(results)
+            
+        return 0
+
     @staticmethod
     def handle_generate_action(args):
         """Handle generate-action command"""
@@ -226,6 +277,7 @@ Examples:
         handlers = {
             'config': CLI.handle_config,
             'review': CLI.handle_review,
+            'summarize': CLI.handle_summarize,
             'generate-action': CLI.handle_generate_action,
             'install-hook': CLI.handle_install_hook,
             'list-models': CLI.handle_list_models,
